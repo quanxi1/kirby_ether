@@ -47,6 +47,34 @@ contract RelayerTest is Test {
         console.log(
             "----------------------------------------------------------------------------"
         );
+        logCurrentState();
+    }
+
+    function logCurrentState() internal view {
+        console.log("\n--- Initial Token Distribution ---");
+
+        // Log token balances for each user
+        for (uint i = 0; i < users.length; i++) {
+            console.log("User %s:", i + 1);
+            for (uint j = 0; j < 3; j++) {
+                uint256 permitTokenBalance = MockERC20WithPermit(
+                    permitTokensSamples[j]
+                ).balanceOf(users[i]);
+                uint256 nonPermitTokenBalance = MockERC20(
+                    nonPermitTokensSamples[j]
+                ).balanceOf(users[i]);
+                console.log(
+                    "  Permit token %s balance: %s",
+                    permitTokensSamples[j],
+                    permitTokenBalance
+                );
+                console.log(
+                    "  Non-permit token %s balance: %s",
+                    nonPermitTokensSamples[j],
+                    nonPermitTokenBalance
+                );
+            }
+        }
     }
 
     function testSweep() public {
@@ -71,12 +99,14 @@ contract RelayerTest is Test {
                 );
                 console.log(
                     "User %d approved %s non-permit token to relayer.",
-                    j,
+                    j + 1,
                     address(nonPermitTokensSamples[i - 3])
                 );
             }
         }
-
+        console.log(
+            "----------------------------------------------------------------------------"
+        );
         bytes[] memory signatures = new bytes[](9);
         uint count = 0;
         for (uint256 i = 0; i < 3; i++) {
@@ -109,16 +139,26 @@ contract RelayerTest is Test {
                 console.log(
                     "Generated permit signature for token %s, user %d:",
                     permitTokensSamples[i],
-                    j
+                    j + 1
                 );
+                console.log("---");
+                console.logBytes32(r);
+                console.logBytes32(s);
+                console.logUint(v);
+                console.log("---");
                 count++;
             }
         }
-
+        console.log(
+            "----------------------------------------------------------------------------"
+        );
         console.log("All signatures generated. Executing sweep...");
         vm.prank(users[0]);
         relayer.sweep(users[0], target, signatures, deadlines);
         console.log("Sweep executed. Verifying balances...");
+        console.log(
+            "----------------------------------------------------------------------------"
+        );
         for (uint256 i = 0; i < 3; i++) {
             assertEq(
                 MockERC20WithPermit(permitTokensSamples[i]).balanceOf(target),
@@ -156,7 +196,7 @@ contract RelayerTest is Test {
                 );
                 console.log(
                     "User %s permit token %s balance: %s",
-                    users[j],
+                    j + 1,
                     address(permitTokensSamples[i]),
                     MockERC20WithPermit(permitTokensSamples[i]).balanceOf(
                         users[j]
@@ -164,11 +204,17 @@ contract RelayerTest is Test {
                 );
                 console.log(
                     "User %s non-permit token %s balance: %s",
-                    users[j],
+                    j + 1,
                     address(nonPermitTokensSamples[i]),
                     MockERC20(nonPermitTokensSamples[i]).balanceOf(users[j])
                 );
             }
+            console.log(
+                "----------------------------------------------------------------------------"
+            );
         }
+        console.log(
+            "----------------------------------------------------------------------------"
+        );
     }
 }
