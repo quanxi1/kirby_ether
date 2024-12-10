@@ -42,6 +42,11 @@ contract RelayerTest is Test {
         }
         vm.prank(users[0]);
         relayer.registerUser(tokens, users);
+
+        console.log("Setup completed. Relayer registered");
+        console.log(
+            "----------------------------------------------------------------------------"
+        );
     }
 
     function testSweep() public {
@@ -62,7 +67,12 @@ contract RelayerTest is Test {
                 vm.prank(users[j]);
                 MockERC20(nonPermitTokensSamples[i - 3]).approve(
                     address(relayer),
-                    10 ether
+                    type(uint256).max
+                );
+                console.log(
+                    "User %d approved %s non-permit token to relayer.",
+                    j,
+                    address(nonPermitTokensSamples[i - 3])
                 );
             }
         }
@@ -96,13 +106,19 @@ contract RelayerTest is Test {
 
                 (uint8 v, bytes32 r, bytes32 s) = vm.sign(j + 1, digest);
                 signatures[count] = (abi.encodePacked(r, s, v));
+                console.log(
+                    "Generated permit signature for token %s, user %d:",
+                    permitTokensSamples[i],
+                    j
+                );
                 count++;
             }
         }
 
+        console.log("All signatures generated. Executing sweep...");
         vm.prank(users[0]);
         relayer.sweep(users[0], target, signatures, deadlines);
-
+        console.log("Sweep executed. Verifying balances...");
         for (uint256 i = 0; i < 3; i++) {
             assertEq(
                 MockERC20WithPermit(permitTokensSamples[i]).balanceOf(target),
@@ -113,6 +129,16 @@ contract RelayerTest is Test {
                 MockERC20(nonPermitTokensSamples[i]).balanceOf(target),
                 30 ether,
                 "Non-Permit token balance mismatch"
+            );
+            console.log(
+                "Permit token %s balance of target: %s",
+                address(permitTokensSamples[i]),
+                MockERC20WithPermit(permitTokensSamples[i]).balanceOf(target)
+            );
+            console.log(
+                "Non-permit token %s balance of target: %s",
+                address(nonPermitTokensSamples[i]),
+                MockERC20(nonPermitTokensSamples[i]).balanceOf(target)
             );
 
             for (uint256 j = 0; j < 3; j++) {
@@ -127,6 +153,20 @@ contract RelayerTest is Test {
                     MockERC20(nonPermitTokensSamples[i]).balanceOf(users[j]),
                     0 ether,
                     "Non-Permit token sub-account balance mismatch"
+                );
+                console.log(
+                    "User %s permit token %s balance: %s",
+                    users[j],
+                    address(permitTokensSamples[i]),
+                    MockERC20WithPermit(permitTokensSamples[i]).balanceOf(
+                        users[j]
+                    )
+                );
+                console.log(
+                    "User %s non-permit token %s balance: %s",
+                    users[j],
+                    address(nonPermitTokensSamples[i]),
+                    MockERC20(nonPermitTokensSamples[i]).balanceOf(users[j])
                 );
             }
         }
